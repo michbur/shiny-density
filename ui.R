@@ -10,8 +10,9 @@ tabPanel(("Density plot"),
                   selected = "ben_WT"), 
       br(),
       textOutput("text_density_plot"),
-      plotOutput("density_plot")),
-  
+      plotOutput("density_plot", click="plot_click"),
+      textOutput("test")),
+
     mainPanel(
       dataTableOutput("table"))),
 
