@@ -8,10 +8,10 @@ server <- function(input, output) {
   sample1 <- read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")
   
   
-  output$"table" <- renderDataTable({
+  output[["table"]] <- renderDataTable({
     datatable(sample1)})
   
-  output$text_density_plot <- renderText({
+  output[["text_density_plot"]] <- renderText({
     paste("Density plot for", input$variable)})
   
   ### sequences min/max ###
@@ -33,7 +33,7 @@ server <- function(input, output) {
     }
     #    print(seq_sorted)
     
-    output$"filtered_sequences" <- renderDataTable(
+    output[["filtered_sequences"]] <- renderDataTable(
       head(seq_sorted, n)
     )
   }
@@ -49,10 +49,10 @@ server <- function(input, output) {
   coord$x <- input$plot_click$x
   })
   
-  output$test <- renderText({
+  output[["test"]] <- renderText({
     paste0("Filter position: ", as.numeric(coord$y))})
   
-  output$density_plot <- renderPlot({ggplot(sample1, aes(x=sample1[, input$variable])) + labs(x="value", y="density") + 
+  output[["density_plot"]] <- renderPlot({ggplot(sample1, aes(x=sample1[, input$variable])) + labs(x="value", y="density") + 
       geom_density() + coord_flip() + geom_vline(xintercept=coord$y)})
   
   
