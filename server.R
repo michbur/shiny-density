@@ -41,50 +41,19 @@ server <- function(input, output) {
   
   
   ### density plot ###
-  
-  y_click <- reactive(input$plot_click$y)
-  output$test <- renderText({
-    y_click <- input$plot_click$y
-    #  print(y_click())
-    paste0(as.numeric(y_click))})
-  
-  
-  ##### v.1 #####
-  
-  # output$density_plot <- reactive({
-  #   if (is.null(y_click)==TRUE){
-  #     renderPlot({ggplot(sample1, aes(x=ben_WT)) +
-  #                 geom_density() + coord_flip()
-  #                 + geom_vline(xintercept = 0)})
-  #   } else {renderPlot({ggplot(sample1, aes(x=ben_WT)) +
-  #         geom_density() + coord_flip()
-  #       + geom_vline(xintercept = y_click() )})
-  #   }
-  #     })
-  
-  
-  
-  ##### v.2 #####
-  
-  # output$density_plot <- reactive({
-  #     renderPlot({ggplot(sample1, aes(x=input$variable)) +
-  #         geom_density() + coord_flip() +
-  #       if (is.null(y_click)==TRUE){
-  #       geom_vline(xintercept = 0)}
-  #    else { geom_vline(xintercept = y_click())}
-  #   })
-  # })
-  
-  
-  
-  ##### v.3 #####
-  
-  if (is.null(y_click)==TRUE){
-    output$density_plot <- renderPlot({ggplot(sample1, aes(x=ben_WT)) +
-        geom_density() + coord_flip() + geom_vline(xintercept=0)}) }
 
-  else {output$density_plot <- renderPlot({ggplot(sample1, aes(x=ben_WT)) +
-      geom_density() + coord_flip() + geom_vline(xintercept=as.numeric(y_click()))})
-  }
+  coord <- reactiveValues(x=0, y=0)
+  
+  observeEvent(input$plot_click, { 
+  coord$y <- input$plot_click$y
+  coord$x <- input$plot_click$x
+  })
+  
+  output$test <- renderText({
+    paste0("Filter position: ", as.numeric(coord$y))})
+  
+  output$density_plot <- renderPlot({ggplot(sample1, aes(x=sample1[, input$variable])) + labs(x="value", y="density") + 
+      geom_density() + coord_flip() + geom_vline(xintercept=coord$y)})
+  
   
 }
