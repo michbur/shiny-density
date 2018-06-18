@@ -41,12 +41,22 @@ server <- function(input, output) {
   
   
   ### density plot ###
-
+  
   coord <- reactiveValues(x=0, y=0)
   
-  observeEvent(input$plot_click, { 
-  coord$y <- input$plot_click$y
-  coord$x <- input$plot_click$x
+  observeEvent(input$plot_click,  {
+    coord$y <- input$plot_click$y
+    coord$x <- input$plot_click$x
+    colm <- (parse_quosure(input$variable))
+    seq_c <- select(sample1, c(seq, !!colm))
+    seq_a <- arrange(seq_c, !!colm)
+    if(input$thresh_button==1){
+      sec_f <- filter(seq_a, !!colm<coord$y)
+      output[["table"]] <- renderDataTable({datatable(sec_f)})
+    }else if (input$thresh_button==2){
+      sec_f <- filter(seq_a, !!colm>coord$y)
+      output[["table"]] <- renderDataTable({datatable(sec_f)})
+    }
   })
   
   output[["test"]] <- renderText({
