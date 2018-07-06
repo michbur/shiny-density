@@ -55,7 +55,7 @@ server <- function(input, output) {
         easyClose = TRUE))
     } else {
       seq_filtered <- filter(sample1, type == input[["var"]])
-      seq_selected <- select(seq_filtered, c(seq, InROPE))
+      seq_selected <- select(seq_filtered, c(seq, prot_id, InROPE))
       seq_sorted <- arrange(seq_selected, InROPE)
       
       if (input[["method"]] == "Density plot") { 
