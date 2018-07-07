@@ -7,7 +7,7 @@ library(rlang)
 server <- function(input, output) {
   sample1 <- read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")
   
-  variable = levels(sample1[["type"]])
+  #  variable = levels(sample1[["type"]])
   
   output[["table"]] <- renderDataTable({
     datatable(sample1)
@@ -20,7 +20,7 @@ server <- function(input, output) {
   
   observeEvent(input[["var"]], {
     sample_chosen <- filter(sample1, type == input[["var"]])
- 
+    
     output[["density_plot"]] <- renderPlot({
       ggplot(sample_chosen,
             aes(x = InROPE)) + 
@@ -28,7 +28,7 @@ server <- function(input, output) {
             geom_density() + 
             coord_flip() + 
             geom_vline(xintercept = coord[["y"]])
-    }) 
+    })
   })
   
   ### density plot click ###
@@ -38,12 +38,12 @@ server <- function(input, output) {
   observeEvent(input[["plot_click"]], { 
     coord[["y"]] <- input[["plot_click"]][["y"]]
     coord[["x"]] <- input[["plot_click"]][["x"]]
-    })
+  })
   
   output[["test"]] <- renderText({
     paste0("Threshold position: ", 
            as.numeric(coord[["y"]]))
-    })   
+  })   
   
   ### filtering ###
   
@@ -78,13 +78,13 @@ server <- function(input, output) {
       
       output[["table"]] <- renderDataTable({
         datatable(seq_out)
-        })
+      })
     }
   })
   
   observeEvent(input[["reset"]], {
     output[["table"]] <- renderDataTable({
       datatable(sample1)
-      })
+    })
   })
 }
