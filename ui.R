@@ -39,5 +39,11 @@ ui <-  (fluidPage(
                  "Reset")),
   
   mainPanel(
-    dataTableOutput("table"))
+    tabsetPanel(
+      tabPanel("Data", dataTableOutput("table")),
+      tabPanel("Proteins", 
+               h3("Count of peptides"), 
+               dataTableOutput("proteins"))
+    )
+  )
 ))
