@@ -17,10 +17,10 @@ server <- function(input, output) {
       vals <- select(filtered, c(prot_id, count))
       colnames(vals)[2] <- i
       df2 <- data.frame(vals)
-      df3 <- merge.data.frame (data, df2, by = "prot_id", all = TRUE)
+      df3 <- merge.data.frame(data, df2, by = "prot_id", all = TRUE)
       data <- df3
     }
-    good_data <- data[rowSums(is.na(data)) != (ncol(data)-1),]
+    good_data <- data[rowSums(is.na(data)) != (ncol(data)-1), ]
     return(good_data)
   }
   
@@ -28,12 +28,29 @@ server <- function(input, output) {
   
   proteins <- counting(sample1)
   
+  phenotypes <- levels(sample1[["type"]]) 
+  
+  sketch = htmltools::withTags(table(
+    class = 'display',
+    thead(
+      tr(
+        th(rowspan = 2, colspan = 2, 'Protein ID'),
+        th(colspan = as.numeric(length(phenotypes)), 'Count of peptides')
+      ),
+      tr(
+        lapply(rep(phenotypes, 1), th)
+      )
+    )
+  ))
+  
   output[["table"]] <- renderDataTable({
     datatable(sample1)
   })
   
   output[["proteins"]] <- renderDataTable({
-    datatable(proteins)
+    datatable(proteins, 
+              container = sketch, 
+              colnames = FALSE)
   })
   
   output[["text_density_plot"]] <- renderText({
@@ -112,7 +129,9 @@ server <- function(input, output) {
         datatable(seq_out)
       })
       output[["proteins"]] <- renderDataTable({
-        datatable(peptides)
+        datatable(peptides, 
+                  container = sketch, 
+                  colnames = FALSE)
       })
     }
   })
@@ -122,7 +141,9 @@ server <- function(input, output) {
       datatable(sample1)
     })
     output[["proteins"]] <- renderDataTable({
-      datatable(proteins)
+      datatable(proteins,
+                container = sketch, 
+                colnames = FALSE)
     })
   })
 }

@@ -8,8 +8,6 @@ ui <-  (fluidPage(
     selectInput("var", 
                 label = "Select a variable:", 
                 choices = levels(read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")[["type"]])),
-    #          variable = levels(sample1[["type"]])variable,
-    #          selected = variable[1]), 
     br(),
     textOutput("text_density_plot"),
     plotOutput("density_plot", 
@@ -42,7 +40,6 @@ ui <-  (fluidPage(
     tabsetPanel(
       tabPanel("Data", dataTableOutput("table")),
       tabPanel("Proteins", 
-               h3("Count of peptides"), 
                dataTableOutput("proteins"))
     )
   )
