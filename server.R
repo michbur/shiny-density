@@ -4,6 +4,14 @@ library(ggplot2)
 library(dplyr)
 library(rlang)
 
+options(DT.options = list(dom = "Brtip",
+                          buttons = c("copy", "csv", "excel", "print"),
+                          pageLength = 50
+))
+
+my_DT <- function(x, ...)
+  datatable(x, ..., escape = FALSE, extensions = 'Buttons', filter = "top", rownames = FALSE)
+
 server <- function(input, output) {
   
   counting <- function(dt) {
@@ -44,11 +52,11 @@ server <- function(input, output) {
   ))
   
   output[["table"]] <- renderDataTable({
-    datatable(sample1)
+    my_DT(sample1)
   })
   
   output[["proteins"]] <- renderDataTable({
-    datatable(proteins, 
+    my_DT(proteins, 
               container = sketch, 
               colnames = FALSE)
   })
@@ -138,10 +146,10 @@ server <- function(input, output) {
   
   observeEvent(input[["reset"]], {
     output[["table"]] <- renderDataTable({
-      datatable(sample1)
+      my_DT(sample1)
     })
     output[["proteins"]] <- renderDataTable({
-      datatable(proteins,
+      my_DT(proteins,
                 container = sketch, 
                 colnames = FALSE)
     })
