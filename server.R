@@ -15,12 +15,11 @@ my_DT <- function(x, ...)
 server <- function(input, output) {
   
   counting <- function(dt) {
-    prot_grouped <- arrange(group_by(dt, prot_id, type))
+    prot_grouped <- arrange(dt, prot_id) %>% 
+      group_by(prot_id, type)
     counts <- (summarise(prot_grouped, count = n()))
-    types <- levels(prot_grouped[["type"]])
-    columns <- c("prot_id", types)
-    data <- data.frame(prot_id = levels(prot_grouped[["prot_id"]]))
-    for (i in types) {
+    data <- list(prot_id = levels(counts[["prot_id"]]))
+    for (i in phenotypes) {
       filtered <- filter(counts, type == i)
       vals <- select(filtered, c(prot_id, count))
       colnames(vals)[2] <- i
@@ -34,15 +33,15 @@ server <- function(input, output) {
   
   sample1 <- read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")
   
-  proteins <- counting(sample1)
-  
   phenotypes <- levels(sample1[["type"]]) 
+  
+  proteins <- counting(sample1)
   
   sketch = htmltools::withTags(table(
     class = 'display',
     thead(
       tr(
-        th(rowspan = 2, colspan = 2, 'Protein ID'),
+        th(rowspan = 2, colspan = 1, 'Protein ID'),
         th(colspan = as.numeric(length(phenotypes)), 'Count of peptides')
       ),
       tr(
@@ -134,10 +133,10 @@ server <- function(input, output) {
       }
       
       output[["table"]] <- renderDataTable({
-        datatable(seq_out)
+        my_DT(seq_out)
       })
       output[["proteins"]] <- renderDataTable({
-        datatable(peptides, 
+        my_DT(peptides, 
                   container = sketch, 
                   colnames = FALSE)
       })
