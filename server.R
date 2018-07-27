@@ -3,6 +3,7 @@ library(DT)
 library(ggplot2)
 library(dplyr)
 library(rlang)
+library(reshape2)
 
 options(DT.options = list(dom = "Brtip",
                           buttons = c("copy", "csv", "excel", "print"),
@@ -15,20 +16,27 @@ my_DT <- function(x, ...)
 server <- function(input, output) {
   
   counting <- function(dt) {
-    prot_grouped <- arrange(dt, prot_id) %>% 
-      group_by(prot_id, type)
-    counts <- (summarise(prot_grouped, count = n()))
-    data <- list(prot_id = levels(counts[["prot_id"]]))
-    for (i in phenotypes) {
-      filtered <- filter(counts, type == i)
-      vals <- select(filtered, c(prot_id, count))
-      colnames(vals)[2] <- i
-      df2 <- data.frame(vals)
-      df3 <- merge.data.frame(data, df2, by = "prot_id", all = TRUE)
-      data <- df3
-    }
-    good_data <- data[rowSums(is.na(data)) != (ncol(data)-1), ]
-    return(good_data)
+    # prot_grouped <- arrange(dt, prot_id) %>% 
+    #   group_by(prot_id, type)
+    # counts <- (summarise(prot_grouped, count = n()))
+    # data <- list(prot_id = levels(counts[["prot_id"]]))
+    # 
+    # for (i in phenotypes) {
+    #   filtered <- filter(counts, type == i)
+    #   vals <- select(filtered, c(prot_id, count))
+    #   colnames(vals)[2] <- i
+    #   df2 <- data.frame(vals)
+    #   df3 <- merge.data.frame(data, df2, by = "prot_id", all = TRUE)
+    #   data <- df3
+    # }
+    # good_data <- data[rowSums(is.na(data)) != (ncol(data)-1), ]
+    # 
+    # return(good_data)
+    
+    prot_grouped %>% 
+      group_by(prot_id, type) %>% 
+      summarise(count = length(seq)) %>% 
+      dcast(prot_id ~ type)
   }
   
   sample1 <- read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")
