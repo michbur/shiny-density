@@ -16,24 +16,7 @@ my_DT <- function(x, ...)
 server <- function(input, output) {
   
   counting <- function(dt) {
-    # prot_grouped <- arrange(dt, prot_id) %>% 
-    #   group_by(prot_id, type)
-    # counts <- (summarise(prot_grouped, count = n()))
-    # data <- list(prot_id = levels(counts[["prot_id"]]))
-    # 
-    # for (i in phenotypes) {
-    #   filtered <- filter(counts, type == i)
-    #   vals <- select(filtered, c(prot_id, count))
-    #   colnames(vals)[2] <- i
-    #   df2 <- data.frame(vals)
-    #   df3 <- merge.data.frame(data, df2, by = "prot_id", all = TRUE)
-    #   data <- df3
-    # }
-    # good_data <- data[rowSums(is.na(data)) != (ncol(data)-1), ]
-    # 
-    # return(good_data)
-    
-    prot_grouped %>% 
+    dt %>% 
       group_by(prot_id, type) %>% 
       summarise(count = length(seq)) %>% 
       dcast(prot_id ~ type)
@@ -109,9 +92,9 @@ server <- function(input, output) {
         "Please select the method of filtering.",
         easyClose = TRUE))
     } else {
-      seq_filtered <- filter(sample1, type == input[["var"]])
- #     seq_selected <- select(seq_filtered, c(seq, prot_id, InROPE))
-      seq_sorted <- arrange(seq_filtered, InROPE)
+      seq_sorted<- sample1 %>%
+        filter(type == input[["var"]]) %>%
+        arrange(InROPE)
       
       if (input[["method"]] == "Density plot") { 
         if (input[["thresh_button"]] == 1) {
