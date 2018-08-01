@@ -1,3 +1,17 @@
+Package: PAAP
 Title: PAAP
-DisplayMode: Showcase
-Type: Shiny
+RoxygenNote: 6.1.0
+Encoding: UTF-8
+Version: 0.1.0
+Author: Who wrote it
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: More about what it does (maybe more than one line)
+License: What license is it under?
+LazyData: true
+Imports: 
+    shiny, 
+    DT, 
+    ggplot2, 
+    dplyr, 
+    rlang, 
+    reshape2

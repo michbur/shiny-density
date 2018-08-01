@@ -10,17 +10,38 @@ options(DT.options = list(dom = "Brtip",
                           pageLength = 50
 ))
 
+#' Datatable output
+#'
+#' Create a HTML datatable widget containing data with export buttons using library DT.
+#' 
+#' @param x Matrix or a data frame containing data.
+#' @param ... Optional arguments to \code{datatable}.
+#' @return HTML datatable widget displaying data.
+#' @examples 
+#' my_DT(df)
+#' my_DT(matrix, colnames = FALSE)
+#' @export
 my_DT <- function(x, ...)
   datatable(x, ..., escape = FALSE, extensions = 'Buttons', filter = "top", rownames = FALSE)
 
+#' Counting peptides
+#' 
+#' Count the occurences of relevant peptides for each protein.
+#' 
+#' @param dt A data table or data frame.
+#' @return Data table containing counts of peptides for each protein.
+#' @examples
+#' counting(data)
+#' counting(sample)
+#' @export
+counting <- function(dt) {
+  dt %>% 
+    group_by(prot_id, type) %>% 
+    summarise(count = length(seq)) %>% 
+    dcast(prot_id ~ type)
+}
+
 server <- function(input, output) {
-  
-  counting <- function(dt) {
-    dt %>% 
-      group_by(prot_id, type) %>% 
-      summarise(count = length(seq)) %>% 
-      dcast(prot_id ~ type)
-  }
   
   sample1 <- read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")
   
