@@ -103,7 +103,7 @@ server <- function(input, output) {
   
   output[["test"]] <- renderText({
     paste0("Threshold position: ", 
-           as.numeric(coord[["y"]]))
+           round(as.numeric(coord[["y"]]), 4))
   })   
   
   ### filtering ###
@@ -153,6 +153,10 @@ server <- function(input, output) {
         my_DT(peptides, 
                   container = sketch, 
                   colnames = FALSE)
+      })
+      
+      output[["n_selected"]] <- renderText({
+        paste0("Selected ", nrow(seq_out), " peptides.")
       })
     }
   })

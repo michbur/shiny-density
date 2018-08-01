@@ -13,6 +13,7 @@ ui <-  (fluidPage(
     plotOutput("density_plot", 
                click = "plot_click"),
     textOutput("test"),
+    textOutput("n_selected"),
     br(),
     
     conditionalPanel(
