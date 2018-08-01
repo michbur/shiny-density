@@ -83,7 +83,9 @@ server <- function(input, output) {
     output[["density_plot"]] <- renderPlot({
       ggplot(sample_chosen,
             aes(x = InROPE)) + 
-            labs(x = "value", y = "density") + 
+            labs(x = "value", y = "count") + 
+            #geom_histogram(binwidth = 2.5) +
+            geom_density(aes(y = ..count..)) +
             geom_density() + 
             coord_flip() + 
             geom_vline(xintercept = coord[["y"]])
