@@ -56,6 +56,10 @@ server <- function(input, output) {
           input[["var"]])
   })
   
+  output[["n_selected"]] <- renderText({
+    paste0("Selected ", nrow(seq_out), " peptides.")
+  })
+  
   observeEvent(input[["var"]], {
     sample_chosen <- filter(sample1, type == input[["var"]])
     
