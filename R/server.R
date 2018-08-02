@@ -43,7 +43,8 @@ counting <- function(dt) {
 
 server <- function(input, output) {
   
-  sample1 <- read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")
+  if(Sys.info()[["nodename"]] == "amyloid")
+    sample1 <- read.csv("/home/michal/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
   
   phenotypes <- levels(sample1[["type"]]) 
   
