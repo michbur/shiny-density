@@ -1,5 +1,5 @@
 ui <-  (fluidPage(
-  
+
   sidebarPanel(
     radioButtons("method",
                  label = "Method of filtering:",
@@ -10,11 +10,11 @@ ui <-  (fluidPage(
                 choices = levels(read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")[["type"]])),
     br(),
     textOutput("text_density_plot"),
+    includeMarkdown("density_plot.md"),
     plotOutput("density_plot", 
                click = "plot_click"),
     textOutput("test"),
     br(),
-    
     conditionalPanel(
       condition = "input.method == 'Density plot'",
       radioButtons("thresh_button", 
@@ -34,12 +34,16 @@ ui <-  (fluidPage(
     actionButton('filter',
                  "Filter"),
     actionButton("reset",
-                 "Reset")),
+                 "Reset"),
+    includeMarkdown("filter_reset.md")),
   
   mainPanel(
     tabsetPanel(
-      tabPanel("Data", dataTableOutput("table")),
+      tabPanel("Data",
+               includeMarkdown("filtering.md"),
+               dataTableOutput("table")),
       tabPanel("Proteins", 
+               includeMarkdown("proteins.md"),
                dataTableOutput("proteins"))
     )
   )
