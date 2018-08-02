@@ -1,4 +1,4 @@
-ui <-  (fluidPage(
+ui <-  (fluidPage(title = "PAAP",
 
   sidebarPanel(
     radioButtons("method",
