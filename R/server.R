@@ -5,35 +5,17 @@ library(dplyr)
 library(rlang)
 library(reshape2)
 
+# DT output options
 options(DT.options = list(dom = "Brtip",
                           buttons = c("copy", "csv", "excel", "print"),
                           pageLength = 50
 ))
 
-#' Datatable output
-#'
-#' Create a HTML datatable widget containing data with export buttons using library DT.
-#' 
-#' @param x Matrix or a data frame containing data.
-#' @param ... Optional arguments to \code{datatable}.
-#' @return HTML datatable widget displaying data.
-#' @examples 
-#' my_DT(df)
-#' my_DT(matrix, colnames = FALSE)
-#' @export
 my_DT <- function(x, ...)
   datatable(x, ..., escape = FALSE, extensions = 'Buttons', filter = "top", rownames = FALSE)
 
-#' Counting peptides
-#' 
-#' Count the occurences of relevant peptides for each protein.
-#' 
-#' @param dt A data table or data frame.
-#' @return Data table containing counts of peptides for each protein.
-#' @examples
-#' counting(data)
-#' counting(sample)
-#' @export
+
+# Function for counting peptides in proteins and phenotypes
 counting <- function(dt) {
   dt %>% 
     group_by(prot_id, type) %>% 
@@ -43,15 +25,19 @@ counting <- function(dt) {
 
 server <- function(input, output) {
   
+  # Data input
   if(Sys.info()[["nodename"]] == "amyloid")
     sample1 <- read.csv("/home/michal/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
   if(Sys.info()[["nodename"]] == "LENOVO")
     sample1 <- read.csv("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
   
+  # Extract phenotypes from data
   phenotypes <- levels(sample1[["type"]]) 
   
+  # Count peptides in proteins
   proteins <- counting(sample1)
   
+  # Container for proteins data table
   sketch = htmltools::withTags(table(
     class = 'display',
     thead(
@@ -65,23 +51,25 @@ server <- function(input, output) {
     )
   ))
   
+  # Initial outputs:
+  # all input data
   output[["table"]] <- renderDataTable({
     my_DT(sample1)
   })
-  
+  # counts of peptides in proteins
   output[["proteins"]] <- renderDataTable({
     my_DT(proteins, 
               container = sketch, 
               colnames = FALSE)
   })
-  
+  # density plot for the first phenotype
   output[["text_density_plot"]] <- renderText({
     paste("Density plot for", 
           input[["var"]])
   })
   
 
-  
+  # Choice of a phenotype and density plot output 
   observeEvent(input[["var"]], {
     sample_chosen <- filter(sample1, type == input[["var"]])
     
@@ -97,8 +85,7 @@ server <- function(input, output) {
     })
   })
   
-  ### density plot click ###
-  
+  # Density plot click - set threshold and display its position
   coord <- reactiveValues(x = 0, y = 0)
   coord[["y"]] <- 0
   observeEvent(input[["plot_click"]], { 
@@ -111,26 +98,31 @@ server <- function(input, output) {
            round(as.numeric(coord[["y"]]), 4))
   })   
   
-  ### filtering ###
+  ### Filtering ###
   
   observeEvent(input[["filter"]], {
+    # None of the methods selected - display modal with error
     if (is.null(input[["method"]])) { 
       showModal(modalDialog(
         title = "Error:",
         "Please select the method of filtering.",
         easyClose = TRUE))
     } else {
-      seq_sorted<- sample1 %>%
+      # Sorting selected data
+      seq_sorted <- sample1 %>%
         filter(type == input[["var"]]) %>%
         arrange(InROPE)
-      
+      # Results of filtering by density plot method:
+      # seq_out - selected data for 'Data' DT
+      # seq_prot - selected data for peptide counting
       if (input[["method"]] == "Density plot") { 
+        # values lower than threshold selected 
         if (input[["thresh_button"]] == 1) {
           seq_out <- filter(seq_sorted,
                             InROPE < coord[["y"]])
           seq_prot <- filter(sample1,
                              InROPE < coord[["y"]])
-          
+        # values higher than threshold selected  
         } else if (input[["thresh_button"]] == 2) {
           seq_out <- filter(seq_sorted, 
                             InROPE > coord[["y"]])
@@ -139,11 +131,15 @@ server <- function(input, output) {
         }
         peptides <- counting(seq_prot)
         
+        # Results of filtering by min/max values:
       } else if (input[["method"]] == "Minimum/maximum values") {
+        # how many values
         n <- input[["x"]]
+        # minimum values selected
         if (input[["type"]] == 1) {
           seq_out <- head(seq_sorted, n)
           seq_prot <- head(arrange(sample1, InROPE), n)
+        # maximumm values selected
         } else if (input[["type"]] == 2) {
           seq_out <- head(arrange(seq_sorted, desc(InROPE)), n)
           seq_prot <- head(arrange(sample1, desc(InROPE)), n)
@@ -151,6 +147,7 @@ server <- function(input, output) {
         peptides <- counting(seq_prot)
       }
       
+      # Outputs with results of filtering:
       output[["table"]] <- renderDataTable({
         my_DT(seq_out)
       })
@@ -159,13 +156,14 @@ server <- function(input, output) {
                   container = sketch, 
                   colnames = FALSE)
       })
-      
+      # Display number of selected peptides
       output[["n_selected"]] <- renderText({
         paste0("Selected ", nrow(seq_out), " peptides.")
       })
     }
   })
   
+  # Reset filtering - return to initial outputs
   observeEvent(input[["reset"]], {
     output[["table"]] <- renderDataTable({
       my_DT(sample1)
