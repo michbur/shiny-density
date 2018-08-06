@@ -45,6 +45,8 @@ server <- function(input, output) {
   
   if(Sys.info()[["nodename"]] == "amyloid")
     sample1 <- read.csv("/home/michal/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
+  if(Sys.info()[["nodename"]] == "LENOVO")
+    sample1 <- read.csv("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
   
   phenotypes <- levels(sample1[["type"]]) 
   
