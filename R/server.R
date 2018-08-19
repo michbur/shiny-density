@@ -139,13 +139,24 @@ server <- function(input, output) {
         if (input[["type"]] == 1) {
           seq_out <- head(seq_sorted, n)
           seq_prot <- head(arrange(sample1, InROPE), n)
-        # maximumm values selected
+        # maximum values selected
         } else if (input[["type"]] == 2) {
           seq_out <- head(arrange(seq_sorted, desc(InROPE)), n)
           seq_prot <- head(arrange(sample1, desc(InROPE)), n)
         }
         peptides <- counting(seq_prot)
-      }
+
+        # Results of filtering on protein level:
+      } else if (input[["method"]] == "Peptides on protein level") {
+        seq_prot <- filter(sample1, type == input[["pept_types"]])  
+        peptides <- counting(sample1) %>%
+                        select(prot_id, input[["pept_types"]])
+        colnames(peptides) <- c("prot_id", "count of peptides")
+        peptides_selected <- peptides %>%
+                              filter(count >= input[["n_pept"]])
+        seq_out <- inner_join(peptides_selected, seq_prot)
+        }
+      
       
       # Outputs with results of filtering:
       output[["table"]] <- renderDataTable({
@@ -153,8 +164,8 @@ server <- function(input, output) {
       })
       output[["proteins"]] <- renderDataTable({
         my_DT(peptides, 
-                  container = sketch, 
-                  colnames = FALSE)
+              container = sketch, 
+              colnames = FALSE)
       })
       # Display number of selected peptides
       output[["n_selected"]] <- renderText({
@@ -170,8 +181,8 @@ server <- function(input, output) {
     })
     output[["proteins"]] <- renderDataTable({
       my_DT(proteins,
-                container = sketch, 
-                colnames = FALSE)
+            container = sketch,
+            colnames = FALSE)
     })
   })
 }
