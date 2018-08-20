@@ -147,16 +147,27 @@ server <- function(input, output) {
         peptides <- counting(seq_prot)
 
         # Results of filtering on protein level:
-      } else if (input[["method"]] == "Peptides on protein level") {
-        seq_prot <- filter(sample1, type == input[["pept_types"]])  
-        peptides <- counting(sample1) %>%
-                        select(prot_id, input[["pept_types"]])
-        colnames(peptides) <- c("prot_id", "count of peptides")
-        peptides_selected <- peptides %>%
-                              filter(count >= input[["n_pept"]])
-        seq_out <- inner_join(peptides_selected, seq_prot)
+      } else if (input[["method"]] == "Protein level") {
+        if (input[["plot_filter"]] == FALSE) {
+          seq_prot <- filter(sample1, type == input[["pept_types"]])  
+          peptides <- counting(sample1) %>%
+                          select(prot_id, input[["pept_types"]])
+          colnames(peptides) <- c("prot_id", "count of peptides")
+          peptides_selected <- peptides %>%
+                                filter("count of peptides" >= input[["n_pept"]])
+          seq_out <- inner_join(peptides_selected, seq_prot)
+        } else if (input [["plot_filter"]] == TRUE) {
+          
+          seq_prot <- filter(seq_sorted,
+                             InROPE < coord[["y"]] & type == input[["pept_types"]])
+          peptides <- counting(seq_prot) %>%
+            select(prot_id, input[["pept_types"]])
+          colnames(peptides) <- c("prot_id", "count of peptides")
+          peptides_selected <- peptides %>%
+            filter("count of peptides" >= input[["n_pept"]])
+          seq_out <- inner_join(peptides_selected, seq_prot)
         }
-      
+      }
       
       # Outputs with results of filtering:
       output[["table"]] <- renderDataTable({
