@@ -76,7 +76,7 @@ server <- function(input, output) {
     output[["density_plot"]] <- renderPlot({
       ggplot(sample_chosen,
             aes(x = InROPE)) + 
-            labs(x = "value", y = "count") + 
+            labs(x = "InROPE values", y = "count of peptides") + 
             #geom_histogram(binwidth = 2.5) +
             geom_density(aes(y = ..count..)) +
             geom_density() + 
@@ -137,11 +137,11 @@ server <- function(input, output) {
         n <- input[["x"]]
         # minimum values selected
         if (input[["type"]] == 1) {
-          seq_out <- head(seq_sorted, n)
+          seq_out <- head(arrange(sample1, InROPE), n)
           seq_prot <- head(arrange(sample1, InROPE), n)
         # maximum values selected
         } else if (input[["type"]] == 2) {
-          seq_out <- head(arrange(seq_sorted, desc(InROPE)), n)
+          seq_out <- head(arrange(sample1, desc(InROPE)), n)
           seq_prot <- head(arrange(sample1, desc(InROPE)), n)
         }
         peptides <- counting(seq_prot)
@@ -149,7 +149,7 @@ server <- function(input, output) {
         # Results of filtering on protein level:
       } else if (input[["method"]] == "Protein level") {
         if (input[["plot_filter"]] == FALSE) {
-          seq_prot <- filter(sample1, type == input[["pept_types"]])  
+          seq_prot <- filter(sample1, type == input[["pept_types"]])
           peptides <- counting(sample1) %>%
                           select(prot_id, input[["pept_types"]])
           colnames(peptides) <- c("prot_id", "count of peptides")
@@ -158,14 +158,15 @@ server <- function(input, output) {
           seq_out <- inner_join(peptides_selected, seq_prot)
         } else if (input [["plot_filter"]] == TRUE) {
           
-          seq_prot <- filter(seq_sorted,
-                             InROPE < coord[["y"]] & type == input[["pept_types"]])
+          seq_prot <- sample1 %>%
+            filter(InROPE < coord[["y"]] & type == input[["pept_types"]])
           peptides <- counting(seq_prot) %>%
             select(prot_id, input[["pept_types"]])
           colnames(peptides) <- c("prot_id", "count of peptides")
           peptides_selected <- peptides %>%
             filter("count of peptides" >= input[["n_pept"]])
           seq_out <- inner_join(peptides_selected, seq_prot)
+          colnames(peptides) <- c("prot_id", input[["pept_types"]])
         }
       }
       
@@ -174,15 +175,23 @@ server <- function(input, output) {
         my_DT(seq_out)
       })
       output[["proteins"]] <- renderDataTable({
-        my_DT(peptides, 
-              container = sketch, 
-              colnames = FALSE)
+        my_DT(peptides)
+  #            container = sketch, 
+  #            colnames = FALSE)
       })
       # Display number of selected peptides
       output[["n_selected"]] <- renderText({
         paste0("Selected ", nrow(seq_out), " peptides.")
       })
-    }
+      
+      # Render heatmap
+      output[["heatmap"]] <- renderPlot({
+        ggplot(seq_out,
+               aes(x=Sequence, y=type)) +
+          geom_tile(color = "black", aes(fill=InROPE)) +
+          coord_flip()
+      })
+     }
   })
   
   # Reset filtering - return to initial outputs
