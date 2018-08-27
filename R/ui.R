@@ -1,5 +1,6 @@
-ui <-  (fluidPage(title = "PAAP",
+library(shiny)
 
+ui <-  (fluidPage(title = "PAAP",
   sidebarPanel(
     radioButtons("method",
                  label = "Method of filtering:",

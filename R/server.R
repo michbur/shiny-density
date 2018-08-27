@@ -54,7 +54,9 @@ server <- function(input, output) {
   # Initial outputs:
   # all input data
   output[["table"]] <- renderDataTable({
-    my_DT(sample1)
+    my_DT(sample1) %>% 
+      formatRound(columns = c("muDiff", "effSz", "InROPE"),
+                  digits = 4)
   })
   # counts of peptides in proteins
   output[["proteins"]] <- renderDataTable({
@@ -172,7 +174,9 @@ server <- function(input, output) {
       
       # Outputs with results of filtering:
       output[["table"]] <- renderDataTable({
-        my_DT(seq_out)
+        my_DT(seq_out) %>% 
+          formatRound(columns = c("muDiff", "effSz", "InROPE"),
+                      digits = 4)
       })
       output[["proteins"]] <- renderDataTable({
         my_DT(peptides)
@@ -197,7 +201,9 @@ server <- function(input, output) {
   # Reset filtering - return to initial outputs
   observeEvent(input[["reset"]], {
     output[["table"]] <- renderDataTable({
-      my_DT(sample1)
+      my_DT(sample1) %>% 
+        formatRound(columns = c("muDiff", "effSz", "InROPE"),
+                    digits = 4)
     })
     output[["proteins"]] <- renderDataTable({
       my_DT(proteins,
