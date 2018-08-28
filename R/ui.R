@@ -1,5 +1,10 @@
 library(shiny)
 
+ if(Sys.info()[["nodename"]] == "amyloid")
+   sample1 <- read.csv("/home/michal/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
+ if(Sys.info()[["nodename"]] == "LENOVO")
+   sample1 <- read.csv("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
+
 ui <-  (fluidPage(title = "PAAP",
   sidebarPanel(
     radioButtons("method",
@@ -8,7 +13,7 @@ ui <-  (fluidPage(title = "PAAP",
                  selected = character(0)),
     selectInput("var", 
                 label = "Select a type:", 
-                choices = levels(read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")[["type"]])),
+                choices = levels(sample1[["type"]])),
    # br(),
     textOutput("text_density_plot"),
     includeMarkdown("density_plot.md"),
@@ -42,7 +47,7 @@ ui <-  (fluidPage(title = "PAAP",
                    max = 20),
       radioButtons("pept_types",
                          label = "peptides belonging to:",
-                         choices = levels(read.csv("https://raw.githubusercontent.com/michbur/shiny-density/master/data/sample1.csv")[["type"]])),
+                         choices = levels(sample1[["type"]])),
       checkboxInput("plot_filter",
                     "Apply density plot threshold",
                     FALSE)),
