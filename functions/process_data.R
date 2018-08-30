@@ -8,7 +8,7 @@ httr::set_config(httr::config(http_version = 0))
 
 # functions to process and annotate data after BEST
 
-if(Sys.info()[["nodename"]] == "amyloid")
+if(Sys.info()[["nodename"]] %in% c("amyloid", "lori"))
   sample1 <- read.csv("/home/michal/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
 
 gene_names_list <- pblapply(unique(sample1[["prot_id"]]), function(ith_name) try({
@@ -26,3 +26,7 @@ gene_names_list <- pblapply(unique(sample1[["prot_id"]]), function(ith_name) try
                                    gene_list[["Entrezgene"]][["Entrezgene_track-info"]][["Gene-track"]][["Gene-track_geneid"]]),
              stringsAsFactors = FALSE)
 }, silent = TRUE))
+
+
+if(Sys.info()[["nodename"]] %in% c("amyloid", "lori"))
+  save(gene_names_list, file = "/home/michal/Dropbox/PepArray_results/2018-06-07/gene_names_list.RData")
