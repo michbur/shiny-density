@@ -33,3 +33,10 @@ if(Sys.info()[["nodename"]] %in% c("amyloid", "lori"))
 
 if(Sys.info()[["nodename"]] %in% c("amyloid", "lori"))
   load("/home/michal/Dropbox/PepArray_results/2018-06-07/gene_names_list.RData")
+
+gene_names_list[!sapply(gene_names_list, class) == "try-error"] %>% 
+  bind_rows() %>% 
+  mutate(gene_address = gsub("gov", "gov/", gene_address, fixed = TRUE)) %>% 
+  mutate(gene_name = paste0('<a href="', gene_address, 
+                            '" target="_blank" class="btn btn-primary">', gene_name, '</a>')) %>% 
+  select(-gene_address)
