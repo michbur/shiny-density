@@ -22,7 +22,7 @@ gene_names_list <- pblapply(unique(sample1[["prot_id"]]), function(ith_name) try
   gene_list <- xmlToList(genes)
   data.frame(prot_id = ith_name,
              gene_name = gene_list[["Entrezgene"]][["Entrezgene_gene"]][["Gene-ref"]][["Gene-ref_locus"]],
-             gene_address = paste0("https://www.ncbi.nlm.nih.gov/", 
+             gene_address = paste0("https://www.ncbi.nlm.nih.gov/gene/", 
                                    gene_list[["Entrezgene"]][["Entrezgene_track-info"]][["Gene-track"]][["Gene-track_geneid"]]),
              stringsAsFactors = FALSE)
 }, silent = TRUE))
