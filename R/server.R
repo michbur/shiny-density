@@ -27,15 +27,16 @@ server <- function(input, output) {
   
   # Data input
   if(Sys.info()[["nodename"]] == "amyloid")
-    sample1 <- read.csv("/home/michal/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
+    load("/home/michal/Dropbox/PepArray_results/2018-06-07/full_data.RData")
+    #full_data <- read.csv("/home/michal/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
   if(Sys.info()[["nodename"]] == "LENOVO")
-    sample1 <- read.csv("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
+    full_data <- read.csv("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
   
   # Extract phenotypes from data
-  phenotypes <- levels(sample1[["type"]]) 
+  phenotypes <- levels(full_data[["type"]]) 
   
   # Count peptides in proteins
-  proteins <- counting(sample1)
+  proteins <- counting(full_data)
   
   # Container for proteins data table
   sketch = htmltools::withTags(table(
@@ -54,7 +55,7 @@ server <- function(input, output) {
   # Initial outputs:
   # all input data
   output[["table"]] <- renderDataTable({
-    my_DT(sample1) %>% 
+    my_DT(full_data) %>% 
       formatRound(columns = c("muDiff", "effSz", "InROPE"),
                   digits = 4)
   })
@@ -73,7 +74,7 @@ server <- function(input, output) {
 
   # Choice of a phenotype and density plot output 
   observeEvent(input[["var"]], {
-    sample_chosen <- filter(sample1, type == input[["var"]])
+    sample_chosen <- filter(full_data, type == input[["var"]])
     
     output[["density_plot"]] <- renderPlot({
       ggplot(sample_chosen,
@@ -111,7 +112,7 @@ server <- function(input, output) {
         easyClose = TRUE))
     } else {
       # Sorting selected data
-      seq_sorted <- sample1 %>%
+      seq_sorted <- full_data %>%
         filter(type == input[["var"]]) %>%
         arrange(InROPE)
       # Results of filtering by density plot method:
@@ -122,13 +123,13 @@ server <- function(input, output) {
         if (input[["thresh_button"]] == 1) {
           seq_out <- filter(seq_sorted,
                             InROPE < coord[["y"]])
-          seq_prot <- filter(sample1,
+          seq_prot <- filter(full_data,
                              InROPE < coord[["y"]])
         # values higher than threshold selected  
         } else if (input[["thresh_button"]] == 2) {
           seq_out <- filter(seq_sorted, 
                             InROPE > coord[["y"]])
-          seq_prot <- filter(sample1,
+          seq_prot <- filter(full_data,
                              InROPE < coord[["y"]])
         }
         peptides <- counting(seq_prot)
@@ -139,20 +140,20 @@ server <- function(input, output) {
         n <- input[["x"]]
         # minimum values selected
         if (input[["type"]] == 1) {
-          seq_out <- head(arrange(sample1, InROPE), n)
-          seq_prot <- head(arrange(sample1, InROPE), n)
+          seq_out <- head(arrange(full_data, InROPE), n)
+          seq_prot <- head(arrange(full_data, InROPE), n)
         # maximum values selected
         } else if (input[["type"]] == 2) {
-          seq_out <- head(arrange(sample1, desc(InROPE)), n)
-          seq_prot <- head(arrange(sample1, desc(InROPE)), n)
+          seq_out <- head(arrange(full_data, desc(InROPE)), n)
+          seq_prot <- head(arrange(full_data, desc(InROPE)), n)
         }
         peptides <- counting(seq_prot)
 
         # Results of filtering on protein level:
       } else if (input[["method"]] == "Protein level") {
         if (input[["plot_filter"]] == FALSE) {
-          seq_prot <- filter(sample1, type == input[["pept_types"]])
-          peptides <- counting(sample1) %>%
+          seq_prot <- filter(full_data, type == input[["pept_types"]])
+          peptides <- counting(full_data) %>%
                           select(prot_id, input[["pept_types"]])
           colnames(peptides) <- c("prot_id", "count of peptides")
           peptides_selected <- peptides %>%
@@ -160,7 +161,7 @@ server <- function(input, output) {
           seq_out <- inner_join(peptides_selected, seq_prot)
         } else if (input [["plot_filter"]] == TRUE) {
           
-          seq_prot <- sample1 %>%
+          seq_prot <- full_data %>%
             filter(InROPE < coord[["y"]] & type == input[["pept_types"]])
           peptides <- counting(seq_prot) %>%
             select(prot_id, input[["pept_types"]])
@@ -201,7 +202,7 @@ server <- function(input, output) {
   # Reset filtering - return to initial outputs
   observeEvent(input[["reset"]], {
     output[["table"]] <- renderDataTable({
-      my_DT(sample1) %>% 
+      my_DT(full_data) %>% 
         formatRound(columns = c("muDiff", "effSz", "InROPE"),
                     digits = 4)
     })
