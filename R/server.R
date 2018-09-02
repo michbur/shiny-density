@@ -118,61 +118,104 @@ server <- function(input, output) {
       # Results of filtering by density plot method:
       # seq_out - selected data for 'Data' DT
       # seq_prot - selected data for peptide counting
-      if (input[["method"]] == "Density plot") { 
+      
+      ### Density plot - peptides 
+      
+      if (input[["method"]] == "Density plot" & input[["level1"]] == "Peptides") { 
         # values lower than threshold selected 
         if (input[["thresh_button"]] == 1) {
           seq_out <- filter(seq_sorted,
                             InROPE < coord[["y"]])
           seq_prot <- filter(full_data,
                              InROPE < coord[["y"]])
+          seq_map <- full_data %>%
+            filter(Sequence %in% seq_out[["Sequence"]])
         # values higher than threshold selected  
         } else if (input[["thresh_button"]] == 2) {
           seq_out <- filter(seq_sorted, 
                             InROPE > coord[["y"]])
           seq_prot <- filter(full_data,
                              InROPE < coord[["y"]])
+          seq_map <- full_data %>%
+            filter(Sequence %in% seq_out[["Sequence"]])
         }
         peptides <- counting(seq_prot)
+      
+      ### Density plot - proteins
         
+        } else if (input[["method"]] == "Density plot" & input[["level1"]] == "Proteins") {
+      
+        # values lower than threshold selected 
+        if (input[["thresh_button"]] == 1) {
+          seq_out <- filter(seq_sorted,
+                            InROPE < coord[["y"]])
+          seq_prot <- full_data %>%
+            filter(InROPE < coord[["y"]])
+          peptides <- counting(seq_prot)
+          peptides_selected <- peptides %>%
+            filter_(paste(input[["var"]], ">=", input[["n_pept"]]))
+          seq_map <- full_data %>%
+            filter(prot_id %in% peptides_selected[["prot_id"]])
+          seq_out <- seq_map %>%
+            filter(type == input[["var"]])
+       
+        # values higher than threshold selected  
+        } else if (input[["thresh_button"]] == 2){
+          seq_out <- filter(seq_sorted,
+                            InROPE > coord[["y"]])
+          seq_prot <- full_data %>%
+            filter(InROPE < coord[["y"]])
+          peptides <- counting(seq_prot)
+          peptides_selected <- peptides %>%
+            filter_(paste(input[["var"]], ">=", input[["n_pept"]]))
+          seq_map <- full_data %>%
+            filter(prot_id %in% seq_out[["prot_id"]])
+          seq_out <- seq_map %>% 
+            filter(type == input[["var"]])
+        }
+
         # Results of filtering by min/max values:
-      } else if (input[["method"]] == "Minimum/maximum values") {
+        # Min/max - peptides  
+          
+      } else if (input[["method"]] == "Minimum/maximum values" & input[["level2"]] == "Peptides") {
         # how many values
         n <- input[["x"]]
         # minimum values selected
         if (input[["type"]] == 1) {
           seq_out <- head(arrange(full_data, InROPE), n)
-          seq_prot <- head(arrange(full_data, InROPE), n)
+          seq_prot <- full_data %>%
+            filter(Sequence %in% seq_out[["Sequence"]])
+          seq_map <- seq_prot
         # maximum values selected
         } else if (input[["type"]] == 2) {
           seq_out <- head(arrange(full_data, desc(InROPE)), n)
-          seq_prot <- head(arrange(full_data, desc(InROPE)), n)
-        }
-        peptides <- counting(seq_prot)
-
-        # Results of filtering on protein level:
-      } else if (input[["method"]] == "Protein level") {
-        if (input[["plot_filter"]] == FALSE) {
-          seq_prot <- filter(full_data, type == input[["pept_types"]])
-          peptides <- counting(full_data) %>%
-                          select(prot_id, input[["pept_types"]])
-          colnames(peptides) <- c("prot_id", "count of peptides")
-          peptides_selected <- peptides %>%
-                                filter("count of peptides" >= input[["n_pept"]])
-          seq_out <- inner_join(peptides_selected, seq_prot)
-        } else if (input [["plot_filter"]] == TRUE) {
-          
           seq_prot <- full_data %>%
-            filter(InROPE < coord[["y"]] & type == input[["pept_types"]])
-          peptides <- counting(seq_prot) %>%
-            select(prot_id, input[["pept_types"]])
-          colnames(peptides) <- c("prot_id", "count of peptides")
-          peptides_selected <- peptides %>%
-            filter("count of peptides" >= input[["n_pept"]])
-          seq_out <- inner_join(peptides_selected, seq_prot)
-          colnames(peptides) <- c("prot_id", input[["pept_types"]])
+            filter(Sequence %in% seq_out[["Sequence"]])
+          seq_map <- seq_prot
+          }
+        peptides <- counting(seq_prot)
+        
+        # Min/max - proteins
+        
+      } else if (input[["method"]] == "Minimum/maximum values" & input[["level2"]] == "Proteins") {
+        n <- input[["x"]]
+        # minimum values selected
+        if (input[["type"]] == 1) {
+          seq_out <- head(arrange(full_data, InROPE), n)
+          seq_prot <- full_data %>%
+            filter(prot_id %in% seq_out[["prot_id"]])
+          seq_map <- seq_prot
+          seq_out <- seq_map
+        # maximum values selected
+        } else if (input[["type"]] == 2) {
+            seq_prot <- head(arrange(full_data, desc(InROPE)), n)
+            seq_map <- full_data %>%
+              filter(prot_id %in% seq_prot[["prot_id"]])
+            seq_prot <- seq_map
+            seq_out <- seq_map
         }
+        peptides <- counting(seq_prot) 
       }
-      
       # Outputs with results of filtering:
       output[["table"]] <- renderDataTable({
         my_DT(seq_out) %>% 
@@ -188,16 +231,17 @@ server <- function(input, output) {
       output[["n_selected"]] <- renderText({
         paste0("Selected ", nrow(seq_out), " peptides.")
       })
-      
       # Render heatmap
       output[["heatmap"]] <- renderPlot({
-        ggplot(seq_out,
+        ggplot(seq_map,
                aes(x=Sequence, y=type)) +
-          geom_tile(color = "black", aes(fill=InROPE)) +
-          coord_flip()
+          geom_tile(aes(fill=InROPE), color = "black") +
+          coord_flip() 
       })
-     }
+        
+    }
   })
+  
   
   # Reset filtering - return to initial outputs
   observeEvent(input[["reset"]], {
