@@ -19,7 +19,7 @@ my_DT <- function(x, ...)
 counting <- function(dt) {
   dt %>% 
     group_by(prot_id, type) %>% 
-    summarise(count = length(seq)) %>% 
+    summarise(count = length(Sequence)) %>% 
     dcast(prot_id ~ type)
 }
 
