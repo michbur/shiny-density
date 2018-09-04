@@ -151,9 +151,11 @@ server <- function(input, output) {
                             InROPE < coord[["y"]])
           seq_prot <- full_data %>%
             filter(InROPE < coord[["y"]])
-          peptides <- counting(seq_prot)
-          peptides_selected <- peptides %>%
-            filter_(paste(input[["var"]], ">=", input[["n_pept"]]))
+          peptides_initial <- counting(seq_prot)
+          peptides_selected <- peptides_initial %>%
+            filter_(paste(input[["var"]], ">=", input[["n_pept1"]]))
+          peptides <- peptides_initial %>%
+            filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept1"]]))
           seq_map <- full_data %>%
             filter(prot_id %in% peptides_selected[["prot_id"]])
           seq_out <- seq_map %>%
@@ -164,12 +166,14 @@ server <- function(input, output) {
           seq_out <- filter(seq_sorted,
                             InROPE > coord[["y"]])
           seq_prot <- full_data %>%
-            filter(InROPE < coord[["y"]])
-          peptides <- counting(seq_prot)
-          peptides_selected <- peptides %>%
-            filter_(paste(input[["var"]], ">=", input[["n_pept"]]))
+            filter(InROPE > coord[["y"]])
+          peptides_initial <- counting(seq_prot)
+          peptides_selected <- peptides_initial %>%
+            filter_(paste(input[["var"]], ">=", input[["n_pept1"]]))
+          peptides <- peptides_initial %>%
+            filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept1"]]))
           seq_map <- full_data %>%
-            filter(prot_id %in% seq_out[["prot_id"]])
+            filter(prot_id %in% peptides_selected[["prot_id"]])
           seq_out <- seq_map %>% 
             filter(type == input[["var"]])
         }
@@ -201,20 +205,27 @@ server <- function(input, output) {
         n <- input[["x"]]
         # minimum values selected
         if (input[["type"]] == 1) {
-          seq_out <- head(arrange(full_data, InROPE), n)
-          seq_prot <- full_data %>%
-            filter(prot_id %in% seq_out[["prot_id"]])
-          seq_map <- seq_prot
-          seq_out <- seq_map
+          seq_sorted <- arrange(full_data, InROPE)
+          peptides_initial <- counting(seq_sorted)
+          peptides <- peptides_initial %>%
+            filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
+            group_by(prot_id) %>%
+            head(n)
+          seq_out <- seq_sorted %>%
+            filter(prot_id %in% peptides[["prot_id"]])
+          seq_map <- seq_out
         # maximum values selected
         } else if (input[["type"]] == 2) {
-            seq_prot <- head(arrange(full_data, desc(InROPE)), n)
-            seq_map <- full_data %>%
-              filter(prot_id %in% seq_prot[["prot_id"]])
-            seq_prot <- seq_map
-            seq_out <- seq_map
+            seq_sorted <- arrange(full_data, desc(InROPE))
+            peptides_initial <- counting(seq_sorted)
+            peptides <- peptides_initial %>%
+              filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
+              group_by(prot_id) %>%
+              head(n)
+            seq_out <- seq_sorted %>%
+              filter(prot_id %in% peptides[["prot_id"]])
+            seq_map <- seq_out
         }
-        peptides <- counting(seq_prot) 
       }
       # Outputs with results of filtering:
       output[["table"]] <- renderDataTable({
