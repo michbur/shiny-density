@@ -77,14 +77,14 @@ server <- function(input, output) {
     sample_chosen <- filter(full_data, type == input[["var"]])
     
     output[["density_plot"]] <- renderPlot({
-      ggplot(sample_chosen,
-            aes(x = InROPE)) + 
-            labs(x = "InROPE values", y = "count of peptides") + 
-            #geom_histogram(binwidth = 2.5) +
-            geom_density(aes(y = ..count..)) +
-            geom_density() + 
-            coord_flip() + 
-            geom_vline(xintercept = coord[["y"]])
+      ggplot(sample_chosen, aes(x = InROPE)) + 
+        labs(x = "InROPE values", y = "count of peptides") + 
+        #geom_histogram(binwidth = 2.5) +
+        geom_density(aes(y = ..count..)) +
+        geom_density() + 
+        coord_flip() + 
+        geom_vline(xintercept = coord[["y"]]) +
+        theme_bw()
     })
   })
   
@@ -244,11 +244,11 @@ server <- function(input, output) {
       })
       # Render heatmap
       output[["heatmap"]] <- renderPlot({
-        ggplot(seq_map,
-               aes(x=Sequence, y=type)) +
-          geom_tile(aes(fill=InROPE), color = "black") +
-          coord_flip() 
-      })
+        ggplot(seq_map, aes(x = type, y = Sequence, fill = InROPE)) +
+          geom_tile(color = "black") +
+          scale_fill_gradient2(midpoint = 50) +
+          theme_bw()
+      }, height = 360 + 50*nrow(seq_map))
         
     }
   })
