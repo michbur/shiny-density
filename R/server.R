@@ -30,41 +30,34 @@ server <- function(input, output) {
     load("/home/michal/Dropbox/PepArray_results/2018-06-07/full_data.RData")
     #full_data <- read.csv("/home/michal/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
   if(Sys.info()[["nodename"]] == "LENOVO")
-    full_data <- read.csv("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
+    #full_data <- read.csv("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_best_res.csv")
+    load("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_data.RData")
+  
+  
+  # Divide full data
+  data <- select(full_data, -gene_name)
+  genes <- select(full_data, c(prot_id, gene_name))
   
   # Extract phenotypes from data
-  phenotypes <- levels(full_data[["type"]]) 
+  phenotypes <- levels(data[["type"]]) 
   
   # Count peptides in proteins
-  proteins <- counting(full_data)
+  proteins <- counting(data) %>%
+    left_join(genes, by="prot_id")
   
-  # Container for proteins data table
-  sketch = htmltools::withTags(table(
-    class = 'display',
-    thead(
-      tr(
-        th(rowspan = 2, colspan = 1, 'Protein ID'),
-        th(colspan = as.numeric(length(phenotypes)), 'Count of peptides')
-      ),
-      tr(
-        lapply(rep(phenotypes, 1), th)
-      )
-    )
-  ))
   
   # Initial outputs:
   # all input data
   output[["table"]] <- renderDataTable({
-    my_DT(full_data) %>% 
+    my_DT(data) %>% 
       formatRound(columns = c("muDiff", "effSz", "InROPE"),
                   digits = 4)
   })
   # counts of peptides in proteins
   output[["proteins"]] <- renderDataTable({
-    my_DT(proteins, 
-              container = sketch, 
-              colnames = FALSE)
+    my_DT(proteins)
   })
+  
   # density plot for the first phenotype
   output[["text_density_plot"]] <- renderText({
     paste("Density plot for", 
@@ -74,7 +67,7 @@ server <- function(input, output) {
 
   # Choice of a phenotype and density plot output 
   observeEvent(input[["var"]], {
-    sample_chosen <- filter(full_data, type == input[["var"]])
+    sample_chosen <- filter(data, type == input[["var"]])
     
     output[["density_plot"]] <- renderPlot({
       ggplot(sample_chosen, aes(x = InROPE)) + 
@@ -112,7 +105,7 @@ server <- function(input, output) {
         easyClose = TRUE))
     } else {
       # Sorting selected data
-      seq_sorted <- full_data %>%
+      seq_sorted <- data %>%
         filter(type == input[["var"]]) %>%
         arrange(InROPE)
       # Results of filtering by density plot method:
@@ -186,13 +179,13 @@ server <- function(input, output) {
         n <- input[["x"]]
         # minimum values selected
         if (input[["type"]] == 1) {
-          seq_out <- head(arrange(full_data, InROPE), n)
+          seq_out <- head(arrange(data, InROPE), n)
           seq_prot <- full_data %>%
             filter(Sequence %in% seq_out[["Sequence"]])
           seq_map <- seq_prot
         # maximum values selected
         } else if (input[["type"]] == 2) {
-          seq_out <- head(arrange(full_data, desc(InROPE)), n)
+          seq_out <- head(arrange(data, desc(InROPE)), n)
           seq_prot <- full_data %>%
             filter(Sequence %in% seq_out[["Sequence"]])
           seq_map <- seq_prot
@@ -205,7 +198,7 @@ server <- function(input, output) {
         n <- input[["x"]]
         # minimum values selected
         if (input[["type"]] == 1) {
-          seq_sorted <- arrange(full_data, InROPE)
+          seq_sorted <- arrange(data, InROPE)
           peptides_initial <- counting(seq_sorted)
           peptides <- peptides_initial %>%
             filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
@@ -216,7 +209,7 @@ server <- function(input, output) {
           seq_map <- seq_out
         # maximum values selected
         } else if (input[["type"]] == 2) {
-            seq_sorted <- arrange(full_data, desc(InROPE))
+            seq_sorted <- arrange(data, desc(InROPE))
             peptides_initial <- counting(seq_sorted)
             peptides <- peptides_initial %>%
               filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
@@ -227,6 +220,11 @@ server <- function(input, output) {
             seq_map <- seq_out
         }
       }
+      
+      # Join peptides with gene names
+      peptides_genes <- left_join(peptides, genes)
+      
+      
       # Outputs with results of filtering:
       output[["table"]] <- renderDataTable({
         my_DT(seq_out) %>% 
@@ -234,9 +232,7 @@ server <- function(input, output) {
                       digits = 4)
       })
       output[["proteins"]] <- renderDataTable({
-        my_DT(peptides)
-  #            container = sketch, 
-  #            colnames = FALSE)
+        my_DT(peptides_genes)
       })
       # Display number of selected peptides
       output[["n_selected"]] <- renderText({
@@ -257,14 +253,12 @@ server <- function(input, output) {
   # Reset filtering - return to initial outputs
   observeEvent(input[["reset"]], {
     output[["table"]] <- renderDataTable({
-      my_DT(full_data) %>% 
+      my_DT(data) %>% 
         formatRound(columns = c("muDiff", "effSz", "InROPE"),
                     digits = 4)
     })
     output[["proteins"]] <- renderDataTable({
-      my_DT(proteins,
-            container = sketch,
-            colnames = FALSE)
+      my_DT(proteins)
     })
   })
 }
