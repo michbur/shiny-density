@@ -213,7 +213,8 @@ server <- function(input, output) {
           peptides <- counting(seq_out)
         # maximum values selected
         } else if (input[["type"]] == 2) {
-            prots <- arrange(means, desc(InROPE_mean))
+            prots <- arrange(means, desc(InROPE_mean)) %>%
+              head(n)
             # peptides_initial <- counting(seq_sorted)
             # peptides <- peptides_initial %>%
             #   filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
