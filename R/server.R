@@ -23,6 +23,14 @@ counting <- function(dt) {
     dcast(prot_id ~ type)
 }
 
+# Count InROPE means
+mean_inrope <- function(data) {
+  data %>%
+    group_by(prot_id) %>%
+    summarise(InROPE_mean=mean(InROPE))
+}
+
+
 server <- function(input, output) {
   
   # Data input
@@ -36,15 +44,17 @@ server <- function(input, output) {
   
   # Divide full data
   data <- select(full_data, -gene_name)
-  genes <- select(full_data, c(prot_id, gene_name))
+  genes <- select(full_data, c(prot_id, gene_name)) %>%
+    unique
+  means <- mean_inrope(data)
   
   # Extract phenotypes from data
   phenotypes <- levels(data[["type"]]) 
   
   # Count peptides in proteins
   proteins <- counting(data) %>%
-    left_join(genes, by="prot_id")
-  
+    inner_join(genes, by="prot_id") %>% 
+    inner_join(means, by="prot_id")
   
   # Initial outputs:
   # all input data
@@ -97,13 +107,6 @@ server <- function(input, output) {
   ### Filtering ###
   
   observeEvent(input[["filter"]], {
-    # None of the methods selected - display modal with error
-    if (is.null(input[["method"]])) { 
-      showModal(modalDialog(
-        title = "Error:",
-        "Please select the method of filtering.",
-        easyClose = TRUE))
-    } else {
       # Sorting selected data
       seq_sorted <- data %>%
         filter(type == input[["var"]]) %>%
@@ -180,13 +183,13 @@ server <- function(input, output) {
         # minimum values selected
         if (input[["type"]] == 1) {
           seq_out <- head(arrange(data, InROPE), n)
-          seq_prot <- full_data %>%
+          seq_prot <- data %>%
             filter(Sequence %in% seq_out[["Sequence"]])
           seq_map <- seq_prot
         # maximum values selected
         } else if (input[["type"]] == 2) {
           seq_out <- head(arrange(data, desc(InROPE)), n)
-          seq_prot <- full_data %>%
+          seq_prot <- data %>%
             filter(Sequence %in% seq_out[["Sequence"]])
           seq_map <- seq_prot
           }
@@ -198,31 +201,33 @@ server <- function(input, output) {
         n <- input[["x"]]
         # minimum values selected
         if (input[["type"]] == 1) {
-          seq_sorted <- arrange(data, InROPE)
-          peptides_initial <- counting(seq_sorted)
-          peptides <- peptides_initial %>%
-            filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
-            group_by(prot_id) %>%
+          prots <- arrange(means, InROPE_mean) %>%
             head(n)
-          seq_out <- seq_sorted %>%
-            filter(prot_id %in% peptides[["prot_id"]])
-          seq_map <- seq_out
+          # peptides_initial <- counting(data)
+          # peptides <- peptides_initial %>%
+          #   filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
+          #   group_by(prot_id) %>%
+          #   head(n)
+          seq_out <- seq_map <- data %>%
+            filter(prot_id %in% prots[["prot_id"]])
+          peptides <- counting(seq_out)
         # maximum values selected
         } else if (input[["type"]] == 2) {
-            seq_sorted <- arrange(data, desc(InROPE))
-            peptides_initial <- counting(seq_sorted)
-            peptides <- peptides_initial %>%
-              filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
-              group_by(prot_id) %>%
-              head(n)
-            seq_out <- seq_sorted %>%
-              filter(prot_id %in% peptides[["prot_id"]])
-            seq_map <- seq_out
+            prots <- arrange(means, desc(InROPE_mean))
+            # peptides_initial <- counting(seq_sorted)
+            # peptides <- peptides_initial %>%
+            #   filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
+            #   group_by(prot_id) %>%
+            #   head(n)
+            seq_out <- seq_map <- data%>%
+              filter(prot_id %in% prots[["prot_id"]])
+            peptides <- counting(seq_out)
         }
       }
       
-      # Join peptides with gene names
-      peptides_genes <- left_join(peptides, genes)
+      # Join peptides with gene names and InROPE means
+      peptides_genes <- inner_join(peptides, genes) %>%
+        inner_join(means, by="prot_id")
       
       
       # Outputs with results of filtering:
@@ -246,7 +251,6 @@ server <- function(input, output) {
           theme_bw()
       }, height = 360 + 50*nrow(seq_map))
         
-    }
   })
   
   
