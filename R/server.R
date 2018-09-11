@@ -23,13 +23,21 @@ counting <- function(dt) {
     dcast(prot_id ~ type)
 }
 
-# Count InROPE means
-mean_inrope <- function(data) {
+# Compute InROPE medians
+median_inrope <- function(data) {
   data %>%
     group_by(prot_id) %>%
-    summarise(InROPE_mean=mean(InROPE))
+    summarise(InROPE_median=median(InROPE))
 }
 
+# Add protein count to proteins table
+prot_number <- function(data) {
+  numbers <- data %>%
+              group_by(prot_id) %>%
+              summarise(prot_number = length(Sequence))
+  data_out <- left_join(counting(data), numbers)
+  return(data_out)
+}
 
 server <- function(input, output) {
   
@@ -46,7 +54,7 @@ server <- function(input, output) {
   data <- select(full_data, -gene_name)
   genes <- select(full_data, c(prot_id, gene_name)) %>%
     unique
-  means <- mean_inrope(data)
+  medians <- median_inrope(data)
   
   # Extract phenotypes from data
   phenotypes <- levels(data[["type"]]) 
@@ -54,7 +62,7 @@ server <- function(input, output) {
   # Count peptides in proteins
   proteins <- counting(data) %>%
     inner_join(genes, by="prot_id") %>% 
-    inner_join(means, by="prot_id")
+    inner_join(medians, by="prot_id")
   
   # Initial outputs:
   # all input data
@@ -93,7 +101,7 @@ server <- function(input, output) {
   
   # Density plot click - set threshold and display its position
   coord <- reactiveValues(x = 0, y = 0)
-  coord[["y"]] <- 0
+  coord[["y"]] <- 100
   observeEvent(input[["plot_click"]], { 
     coord[["y"]] <- input[["plot_click"]][["y"]]
     coord[["x"]] <- input[["plot_click"]][["x"]]
@@ -201,34 +209,33 @@ server <- function(input, output) {
         n <- input[["x"]]
         # minimum values selected
         if (input[["type"]] == 1) {
-          prots <- arrange(means, InROPE_mean) %>%
-            head(n)
-          # peptides_initial <- counting(data)
-          # peptides <- peptides_initial %>%
-          #   filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
-          #   group_by(prot_id) %>%
-          #   head(n)
+          peptides_initial <- prot_number(data)
+          peptides <- peptides_initial %>%
+            filter(prot_number >= input[["n_pept2"]]) %>%
+            inner_join(medians, by="prot_id") %>%
+            arrange(InROPE_median) %>%
+            head(n) %>%
+            select(-c(prot_number, InROPE_median))
           seq_out <- seq_map <- data %>%
-            filter(prot_id %in% prots[["prot_id"]])
-          peptides <- counting(seq_out)
+            filter(prot_id %in% peptides[["prot_id"]])
+
         # maximum values selected
         } else if (input[["type"]] == 2) {
-            prots <- arrange(means, desc(InROPE_mean)) %>%
-              head(n)
-            # peptides_initial <- counting(seq_sorted)
-            # peptides <- peptides_initial %>%
-            #   filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept2"]])) %>%
-            #   group_by(prot_id) %>%
-            #   head(n)
-            seq_out <- seq_map <- data%>%
-              filter(prot_id %in% prots[["prot_id"]])
-            peptides <- counting(seq_out)
+          peptides_initial <- prot_number(data)
+          peptides <- peptides_initial %>%
+            filter(prot_number >= input[["n_pept2"]]) %>%
+            inner_join(medians, by="prot_id") %>%
+            arrange(desc(InROPE_median)) %>%
+            head(n) %>%
+            select(-c(prot_number, InROPE_median))
+          seq_out <- seq_map <- data %>%
+            filter(prot_id %in% peptides[["prot_id"]])
         }
       }
       
-      # Join peptides with gene names and InROPE means
+      # Join peptides with gene names and InROPE medians
       peptides_genes <- inner_join(peptides, genes) %>%
-        inner_join(means, by="prot_id")
+        inner_join(medians, by="prot_id")
       
       
       # Outputs with results of filtering:
