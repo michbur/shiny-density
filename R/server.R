@@ -50,6 +50,48 @@ server <- function(input, output) {
     load("C:/Users/Kaede/Dropbox/PepArray_results/2018-06-07/full_data.RData")
   
   
+  ### Filtering functions ------------------------------------------------------------
+  
+  ### Filtering by density plot 
+  
+  filter_density_plot <- function(data) {
+    # lower or higher than threshold
+    if (input[["thresh_button"]] == 1) {
+      sign <- "<"
+    } else if (input[["thresh_button"]] == 2) {
+      sign <- ">"
+    }
+    
+    # Peptide level
+    if (input[["level1"]] == "Peptides") {
+      seq_prot <- data %>%
+        filter_(paste("InROPE", sign, coord[["y"]]))
+      seq_out <- seq_prot %>% 
+        filter(type == input[["var"]])
+      seq_map <- data %>%
+        filter(Sequence %in% seq_out[["Sequence"]])
+      peptides <- counting(seq_prot)
+    }
+    # Protein level
+    else if (input[["level1"]] == "Proteins") {
+      seq_for_out <- data %>%
+        filter(type == input[["var"]]) %>%
+        filter_(paste("InROPE", sign, coord[["y"]])) # peptides below/above the threshold, for 'Data' table, only one phenotype
+      seq_for_prot <- filter(data, InROPE < coord[["y"]])
+      peptides_for_out <- counting(seq_for_prot) %>%
+        filter_(paste(input[["var"]], ">=", as.numeric(input[["n_pept1"]]))) # selected peptides for 'Data' table, only proteins of one phenotype with given peptide count
+      peptides_for_prot <- counting(seq_for_prot)
+      peptides <- peptides_for_prot %>%
+        filter_at(.vars=2:ncol(peptides_for_prot), any_vars(. >= input[["n_pept1"]])) # selected peptide counts for 'Proteins' table, all phenotypes with given peptide count
+      seq_out <- filter(seq_for_out, prot_id %in% peptides_for_out[["prot_id"]]) # output for 'Data' table, all selected peptide sequences from selected proteins and given phenotype
+      seq_map <- filter(data, Sequence %in% seq_out[["Sequence"]]) # all the peptide sequences from selected proteins + the same sequences from other phenotypes
+    }
+    
+    return(list(seq_out, seq_map, peptides))
+  }
+  
+  
+  
   # Divide full data
   data <- select(full_data, -gene_name)
   genes <- select(full_data, c(prot_id, gene_name)) %>%
@@ -115,72 +157,15 @@ server <- function(input, output) {
   ### Filtering ###
   
   observeEvent(input[["filter"]], {
-      # Sorting selected data
-      seq_sorted <- data %>%
-        filter(type == input[["var"]]) %>%
-        arrange(InROPE)
-      # Results of filtering by density plot method:
-      # seq_out - selected data for 'Data' DT
-      # seq_prot - selected data for peptide counting
+     
+      ### Density plot 
       
-      ### Density plot - peptides 
-      
-      if (input[["method"]] == "Density plot" & input[["level1"]] == "Peptides") { 
-        # values lower than threshold selected 
-        if (input[["thresh_button"]] == 1) {
-          seq_out <- filter(seq_sorted,
-                            InROPE < coord[["y"]])
-          seq_prot <- filter(full_data,
-                             InROPE < coord[["y"]])
-          seq_map <- full_data %>%
-            filter(Sequence %in% seq_out[["Sequence"]])
-        # values higher than threshold selected  
-        } else if (input[["thresh_button"]] == 2) {
-          seq_out <- filter(seq_sorted, 
-                            InROPE > coord[["y"]])
-          seq_prot <- filter(full_data,
-                             InROPE < coord[["y"]])
-          seq_map <- full_data %>%
-            filter(Sequence %in% seq_out[["Sequence"]])
-        }
-        peptides <- counting(seq_prot)
-      
-      ### Density plot - proteins
+      if (input[["method"]] == "Density plot") { 
         
-        } else if (input[["method"]] == "Density plot" & input[["level1"]] == "Proteins") {
-      
-        # values lower than threshold selected 
-        if (input[["thresh_button"]] == 1) {
-          seq_out <- filter(seq_sorted,
-                            InROPE < coord[["y"]])
-          seq_prot <- full_data %>%
-            filter(InROPE < coord[["y"]])
-          peptides_initial <- counting(seq_prot)
-          peptides_selected <- peptides_initial %>%
-            filter_(paste(input[["var"]], ">=", input[["n_pept1"]]))
-          peptides <- peptides_initial %>%
-            filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept1"]]))
-          seq_map <- full_data %>%
-            filter(prot_id %in% peptides_selected[["prot_id"]])
-          seq_out <- seq_map %>%
-            filter(type == input[["var"]])
-       
-        # values higher than threshold selected  
-        } else if (input[["thresh_button"]] == 2){
-          seq_out <- filter(seq_sorted,
-                            InROPE > coord[["y"]])
-          seq_prot <- full_data %>%
-            filter(InROPE > coord[["y"]])
-          peptides_initial <- counting(seq_prot)
-          peptides_selected <- peptides_initial %>%
-            filter_(paste(input[["var"]], ">=", input[["n_pept1"]]))
-          peptides <- peptides_initial %>%
-            filter_at(.vars=2:ncol(peptides_initial), any_vars(. >= input[["n_pept1"]]))
-          seq_map <- full_data %>%
-            filter(prot_id %in% peptides_selected[["prot_id"]])
-          seq_out <- seq_map %>% 
-            filter(type == input[["var"]])
-        }
+        seq_out <- filter_density_plot(data)[[1]]
+        seq_map <- filter_density_plot(data)[[2]]
+        peptides <- filter_density_plot(data)[[3]]
+        
 
         # Results of filtering by min/max values:
         # Min/max - peptides  
@@ -234,7 +219,7 @@ server <- function(input, output) {
       }
       
       # Join peptides with gene names and InROPE medians
-      peptides_genes <- inner_join(peptides, genes) %>%
+      peptides_genes <- inner_join(peptides, genes, by="prot_id") %>%
         inner_join(medians, by="prot_id")
       
       
