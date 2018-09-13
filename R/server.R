@@ -90,7 +90,44 @@ server <- function(input, output) {
     return(list(seq_out, seq_map, peptides))
   }
   
+  ### Filtering by minimum/maximum values
   
+  filter_min_max <- function(data) {
+    n <- input[["x"]] # how many peptides/proteins should be displayed
+    # minimum or maximum values?
+    sorting <- function(data, data_column) {
+      if (input[["type"]] == 1) { # minimum
+        arrange(data, data[[data_column]])
+      } else if (input[["type"]] == 2) { # maximum
+        arrange(data, desc(data[[data_column]]))
+      }
+    }
+    
+    
+    # Peptide level
+    if (input[["level2"]] == "Peptides") {
+      seq_out <- sorting(data, "InROPE") %>%
+        head(n) # select n peptides with the lowes/highest InROPE values
+      seq_prot <- seq_map <- data %>%
+        filter(Sequence %in% seq_out[["Sequence"]]) # select from full data all sequences from seq_out (include all phenotypes)
+      peptides <- counting(seq_prot)
+    } 
+    # Protein level
+    else if (input[["level2"]] == "Proteins") {
+      peptides_initial <- prot_number(data) # 'Protein' table + peptide count in each protein (for all phenotypes together)
+      peptides <- peptides_initial %>%
+        filter(prot_number >= input[["n_pept2"]]) %>%
+        inner_join(medians, by="prot_id") %>%
+        sorting("InROPE_median") %>%
+        head(n) %>% 
+        select(-c(prot_number, InROPE_median)) # select n of proteins with the lowest/highest InROPE median
+      seq_out <- seq_map <- data %>%
+        filter(prot_id %in% peptides[["prot_id"]]) # output data for 'Data' table and heatmap, all sequences of peptides in selected proteins
+    }
+    return(list(seq_out, seq_map, peptides))
+  }
+  
+  ###----------------------------------------------------------------------------------
   
   # Divide full data
   data <- select(full_data, -gene_name)
@@ -165,59 +202,18 @@ server <- function(input, output) {
         seq_out <- filter_density_plot(data)[[1]]
         seq_map <- filter_density_plot(data)[[2]]
         peptides <- filter_density_plot(data)[[3]]
-        
-
-        # Results of filtering by min/max values:
-        # Min/max - peptides  
+      } 
+    
+      ### Minimum/maximum values
+    
+        else if (input[["method"]] == "Minimum/maximum values") {
           
-      } else if (input[["method"]] == "Minimum/maximum values" & input[["level2"]] == "Peptides") {
-        # how many values
-        n <- input[["x"]]
-        # minimum values selected
-        if (input[["type"]] == 1) {
-          seq_out <- head(arrange(data, InROPE), n)
-          seq_prot <- data %>%
-            filter(Sequence %in% seq_out[["Sequence"]])
-          seq_map <- seq_prot
-        # maximum values selected
-        } else if (input[["type"]] == 2) {
-          seq_out <- head(arrange(data, desc(InROPE)), n)
-          seq_prot <- data %>%
-            filter(Sequence %in% seq_out[["Sequence"]])
-          seq_map <- seq_prot
-          }
-        peptides <- counting(seq_prot)
-        
-        # Min/max - proteins
-        
-      } else if (input[["method"]] == "Minimum/maximum values" & input[["level2"]] == "Proteins") {
-        n <- input[["x"]]
-        # minimum values selected
-        if (input[["type"]] == 1) {
-          peptides_initial <- prot_number(data)
-          peptides <- peptides_initial %>%
-            filter(prot_number >= input[["n_pept2"]]) %>%
-            inner_join(medians, by="prot_id") %>%
-            arrange(InROPE_median) %>%
-            head(n) %>%
-            select(-c(prot_number, InROPE_median))
-          seq_out <- seq_map <- data %>%
-            filter(prot_id %in% peptides[["prot_id"]])
-
-        # maximum values selected
-        } else if (input[["type"]] == 2) {
-          peptides_initial <- prot_number(data)
-          peptides <- peptides_initial %>%
-            filter(prot_number >= input[["n_pept2"]]) %>%
-            inner_join(medians, by="prot_id") %>%
-            arrange(desc(InROPE_median)) %>%
-            head(n) %>%
-            select(-c(prot_number, InROPE_median))
-          seq_out <- seq_map <- data %>%
-            filter(prot_id %in% peptides[["prot_id"]])
+          seq_out <- filter_min_max(data)[[1]]
+          seq_map <- filter_min_max(data)[[2]]
+          peptides <- filter_min_max(data)[[3]]
         }
-      }
-      
+        
+
       # Join peptides with gene names and InROPE medians
       peptides_genes <- inner_join(peptides, genes, by="prot_id") %>%
         inner_join(medians, by="prot_id")
