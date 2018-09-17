@@ -4,4 +4,4 @@ runtime: shiny
 output: html_document
 ---
 
-Heatmap for selected peptides.
+Heatmap for selected peptides/proteins.
