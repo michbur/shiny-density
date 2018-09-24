@@ -8,6 +8,10 @@ library(DT)
 
 ui <-  (fluidPage(title = "PAAP",
   sidebarPanel(
+    radioButtons("parameter",
+                 label = "Parameter used for filtering:",
+                 choices = c("InROPE" = "InROPE", "Size effect" = "effSz")),
+    # textOutput("testing"),
     radioButtons("method",
                  label = "Method of filtering:",
                  choices = c("Density plot", "Minimum/maximum values")),
