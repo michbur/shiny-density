@@ -33,7 +33,7 @@ prot_number <- function(data) {
   return(data_out)
 }
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   # Data input
   if(Sys.info()[["nodename"]] == "amyloid")
@@ -73,10 +73,7 @@ server <- function(input, output) {
           theme_bw()
       })
     })
-  
-  # output[["testing"]] <- renderText({
-  #   paste(param[["parameter"]], param[["quoted"]])
-  # })
+
   
   # Density plot click - set threshold and display its position
   coord <- reactiveValues(x = 0, y = 0)
@@ -228,8 +225,6 @@ server <- function(input, output) {
   
   # counts of peptides in proteins
   output[["proteins"]] <- renderDataTable({
-  #  proteins[["Actions"]] <-
-  #    HTML('<button type="button" class="btn btn-secondary delete" id=delete>;Delete</button>')
     my_DT(proteins())
   })
   
@@ -300,6 +295,7 @@ server <- function(input, output) {
       output[["heatmap"]] <- renderPlot({
         plot_heatmap(seq_map())
       }, height = 360 + 50*nrow(seq_map()))
+      updateTabsetPanel(session, "tabsets", selected = "Heatmap")
     })
 
   # Reset filtering - return to initial outputs

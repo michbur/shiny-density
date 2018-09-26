@@ -70,7 +70,7 @@ ui <-  (fluidPage(title = "PAAP",
     includeMarkdown("filter_reset.md")),
   
   mainPanel(
-    tabsetPanel(
+    tabsetPanel(id = 'tabsets',
       tabPanel("Data",
                includeMarkdown("filtering.md"),
                dataTableOutput("table")),
