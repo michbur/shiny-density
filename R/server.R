@@ -193,6 +193,20 @@ server <- function(input, output) {
   ###----------------------------------------------------------------------------------
   
   
+  # Render heatmap function
+  plot_heatmap <- function(data_to_map) {
+    ggplot(data_to_map, aes(x = type, y = Sequence, fill = case_when(
+      input[["parameter"]] == "InROPE" ~ InROPE,
+      input[["parameter"]] == "effSz" ~ effSz))) +
+      labs(fill = input[["parameter"]]) +
+        geom_tile(color = "black") +
+        scale_fill_gradient2(midpoint = case_when(
+        input[["parameter"]] == "InROPE" ~ 50,
+        input[["parameter"]] == "effSz" ~ 0)) +
+      theme_bw()
+}
+
+  
   # Extract phenotypes from data
   phenotypes <- levels(data[["type"]]) 
   
@@ -210,8 +224,12 @@ server <- function(input, output) {
       formatRound(columns = c("muDiff", "effSz", "InROPE"),
                   digits = 4)
   })
+  
+  
   # counts of peptides in proteins
   output[["proteins"]] <- renderDataTable({
+  #  proteins[["Actions"]] <-
+  #    HTML('<button type="button" class="btn btn-secondary delete" id=delete>;Delete</button>')
     my_DT(proteins())
   })
   
@@ -257,7 +275,7 @@ server <- function(input, output) {
           formatRound(columns = c("muDiff", "effSz", "InROPE"),
                       digits = 4)
       })
-      output[["proteins"]] <- renderDataTable({
+      output[["proteins"]] <- renderDT({
         my_DT(peptides_genes())
       })
       # Display number of selected peptides
@@ -266,19 +284,24 @@ server <- function(input, output) {
       })
       # Render heatmap
       output[["heatmap"]] <- renderPlot({
-        ggplot(seq_map, aes(x = type, y = Sequence, fill = case_when(
-          input[["parameter"]] == "InROPE" ~ InROPE,
-          input[["parameter"]] == "effSz" ~ effSz))) +
-          labs(fill = input[["parameter"]]) +
-          geom_tile(color = "black") +
-          scale_fill_gradient2(midpoint = case_when(
-            input[["parameter"]] == "InROPE" ~ 50,
-            input[["parameter"]] == "effSz" ~ 0)) +
-          theme_bw()
+        plot_heatmap(seq_map)
       }, height = 360 + 50*nrow(seq_map))
   })
   
-  
+    seq_map_selected <- reactive({
+      sth <- input[["proteins_rows_selected"]]
+      filter(proteins()[sth,])[["prot_id"]]
+    })
+      
+  observeEvent(input[["heatmap_selected"]], {
+    seq_map <- reactive({
+      filter(data, prot_id %in% seq_map_selected())
+    })
+      output[["heatmap"]] <- renderPlot({
+        plot_heatmap(seq_map())
+      }, height = 360 + 50*nrow(seq_map()))
+    })
+
   # Reset filtering - return to initial outputs
   observeEvent(input[["reset"]], {
     output[["table"]] <- renderDataTable({
@@ -286,7 +309,7 @@ server <- function(input, output) {
         formatRound(columns = c("muDiff", "effSz", "InROPE"),
                     digits = 4)
     })
-    output[["proteins"]] <- renderDataTable({
+    output[["proteins"]] <- renderDT({
       my_DT(proteins())
     })
   })
